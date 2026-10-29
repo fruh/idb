@@ -1,0 +1,4 @@
+/dist
+/bin
+*.test
+.DS_Store
