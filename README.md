@@ -94,7 +94,8 @@ Flags:
 Use "idb [command] --help" for more information about a command.
 ```
 
-`idb <command> --help` shows the details of each command, e.g. the relay daemon:
+`idb <command> --help` shows the details of each command. `idb logcat -o ios.log` appends the device log to a file
+(add `--tee` to also print it); the relay daemon, for example:
 
 ```
 Starts a background server that relays the host's usbmuxd to a TCP port, so containers
