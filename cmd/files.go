@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/fruh/idb/internal/device"
 )
@@ -192,12 +193,7 @@ For installed apps and their bundle paths use "idb ls-apps".`,
 	f := c.Flags()
 	f.BoolVar(&forceSSH, "ssh", false, "require SSH, never fall back to the file browser")
 	f.BoolVar(&files, "files", false, "skip SSH and open the file browser")
-	f.StringVar(&cfg.User, "user", "mobile", "ssh user")
-	f.StringVar(&cfg.Password, "password", "", "ssh password (env IDB_SSH_PASSWORD)")
-	f.StringVarP(&cfg.IdentityFile, "identity", "i", "", "ssh private key file")
-	f.Uint16Var(&cfg.Port, "ssh-port", 22, "sshd port on the device")
-	f.BoolVar(&cfg.NoDefaultPassword, "no-default-password", false, "do not try the jailbreak default password \"alpine\"")
-	f.BoolVar(&insecure, "insecure-hostkey", false, "skip host key pinning")
+	addSSHFlags(f, &cfg, &insecure)
 	addAppFlag(c)
 	return c
 }
@@ -377,4 +373,14 @@ func screenshotCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+// addSSHFlags registers the login options shared by shell and reverse.
+func addSSHFlags(f *pflag.FlagSet, cfg *device.SSHConfig, insecure *bool) {
+	f.StringVar(&cfg.User, "user", "mobile", "ssh user")
+	f.StringVar(&cfg.Password, "password", "", "ssh password (env IDB_SSH_PASSWORD)")
+	f.StringVarP(&cfg.IdentityFile, "identity", "i", "", "ssh private key file")
+	f.Uint16Var(&cfg.Port, "ssh-port", 22, "sshd port on the device")
+	f.BoolVar(&cfg.NoDefaultPassword, "no-default-password", false, "do not try the jailbreak default password \"alpine\"")
+	f.BoolVar(insecure, "insecure-hostkey", false, "skip host key pinning")
 }

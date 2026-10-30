@@ -74,6 +74,7 @@ Available Commands:
   ps          List running processes (developer services)
   pull        Copy a remote file or directory to the host
   push        Copy a host file to the device
+  reverse     Expose a host service on the device (like adb reverse; jailbroken devices, until Ctrl-C)
   rm          Delete a remote file (or directory with -r)
   screenshot  Capture the screen (needs developer services)
   server      Start the host relay daemon (usbmuxd over TCP) or print its status
@@ -135,9 +136,19 @@ Global Flags:
 Auth order: key, ssh-agent, password, the jailbreak default `alpine` (only if no password was given; `--no-default-password` disables it), prompt. If the default is rejected, idb asks for the password (3 tries). Host keys are pinned per UDID in `~/.idb/known_hosts`
 (a changed key is refused unless `--insecure-hostkey`). A failed login is an error, not a fallback. Without a jailbreak there is no shell on iOS.
 
-No `reverse`: iOS has no device-to-host channel over USB (usbmuxd only opens host -> device connections), so
-`adb reverse` has no equivalent. Make the app connect to the host's LAN IP, or for iOS 17+ the host's tunnel
-address, and run the service/proxy there.
+## Reverse (jailbroken devices)
+
+```
+idb reverse 8080 8080                          # phone's 127.0.0.1:8080 -> localhost:8080 where idb runs
+idb reverse 8080 host.docker.internal:8080     # from a container: reach a service on the host
+```
+
+iOS has no device-to-host channel over USB (usbmuxd only opens host -> device connections), so unlike
+`adb reverse` this needs a jailbreak: idb logs in to OpenSSH on the device (same options as `idb shell`) and
+uses SSH remote forwarding, so the phone's sshd listens and tunnels each connection back to the target.
+It runs in the foreground until Ctrl-C and ends when the SSH session drops. The listener is bound to the
+phone's loopback unless you pass `--bind`; sshd must allow TCP forwarding. On stock iOS make the app connect
+to the host's LAN IP instead.
 
 Select a device with `-s <udid>` or `IDB_SERIAL`. Container access with `-a` needs a
 developer-signed app (full container) or UIFileSharingEnabled (Documents only).

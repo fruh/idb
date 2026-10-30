@@ -52,26 +52,35 @@ func DialPort(d ios.DeviceEntry, port uint16) (net.Conn, error) {
 	return m.ReleaseDeviceConnection().Conn(), nil
 }
 
-// SSHShell logs in and runs cmd, or an interactive shell when cmd is empty.
-// It returns the remote exit status.
-func SSHShell(d ios.DeviceEntry, cfg SSHConfig, cmd []string) (int, error) {
+// dialSSH opens the usbmuxd connection to the device's sshd.
+func dialSSH(d ios.DeviceEntry, cfg *SSHConfig) (net.Conn, error) {
 	if cfg.Port == 0 {
 		cfg.Port = 22
 	}
 	conn, err := dialPortFn(d, cfg.Port)
 	if err != nil {
 		if !errors.Is(err, errUsbmuxd) {
-			return 1, fmt.Errorf("%w: %v (stock iOS has no shell; a jailbreak with OpenSSH is required)", ErrNoSSH, err)
+			return nil, fmt.Errorf("%w: %v (stock iOS has no shell; a jailbreak with OpenSSH is required)", ErrNoSSH, err)
 		}
+		return nil, err
+	}
+	return conn, nil
+}
+
+// SSHShell logs in and runs cmd, or an interactive shell when cmd is empty.
+// It returns the remote exit status.
+func SSHShell(d ios.DeviceEntry, cfg SSHConfig, cmd []string) (int, error) {
+	conn, err := dialSSH(d, &cfg)
+	if err != nil {
 		return 1, err
 	}
 	return runSSH(conn, d.Properties.SerialNumber, cfg, cmd)
 }
 
-// runSSH speaks SSH over an established connection to the device's sshd.
-func runSSH(conn net.Conn, udid string, cfg SSHConfig, cmd []string) (int, error) {
+// connectSSH logs in over an established connection to the device's sshd. The
+// returned func releases the ssh-agent connection and must be called after use.
+func connectSSH(conn net.Conn, udid string, cfg SSHConfig) (*ssh.Client, func(), error) {
 	auth, closeAgent := authMethods(cfg)
-	defer closeAgent()
 	sc, chans, reqs, err := ssh.NewClientConn(conn, "idb-"+udid, &ssh.ClientConfig{
 		User:            cfg.User,
 		Auth:            auth,
@@ -79,9 +88,19 @@ func runSSH(conn net.Conn, udid string, cfg SSHConfig, cmd []string) (int, error
 	})
 	if err != nil {
 		conn.Close()
+		closeAgent()
+		return nil, nil, err
+	}
+	return ssh.NewClient(sc, chans, reqs), closeAgent, nil
+}
+
+// runSSH speaks SSH over an established connection to the device's sshd.
+func runSSH(conn net.Conn, udid string, cfg SSHConfig, cmd []string) (int, error) {
+	client, closeAgent, err := connectSSH(conn, udid, cfg)
+	if err != nil {
 		return 1, err
 	}
-	client := ssh.NewClient(sc, chans, reqs)
+	defer closeAgent()
 	defer client.Close()
 	sess, err := client.NewSession()
 	if err != nil {

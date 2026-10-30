@@ -44,7 +44,7 @@ func Root() *cobra.Command {
 		devicesCmd(), infoCmd(), lsAppsCmd(), logcatCmd(),
 		installCmd(), uninstallCmd(), serverCmd(), killServerCmd(), doctorCmd(),
 		lsCmd(), pullCmd(), pushCmd(), rmCmd(), shellCmd(), forwardCmd(), crashlogsCmd(), screenshotCmd(),
-		psCmd(), launchCmd(), killCmd(), mountCmd(), versionCmd(),
+		psCmd(), launchCmd(), killCmd(), mountCmd(), reverseCmd(), versionCmd(),
 	)
 	return root
 }
