@@ -165,3 +165,7 @@ developer-signed app (full container) or UIFileSharingEnabled (Documents only).
    serving tunnel info on `--tunnel-port` (default 60105) next to the usbmuxd relay. Clients find it
    on the same host as the relay. With `--bind 172.17.0.1` the per-device tunnel ports are relayed
    to that address too. Like the relay, the agent is unauthenticated.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
